@@ -244,44 +244,16 @@
 ;;;     - 6/14/2019 - updated code per feedback from Dr. Turner to improve
 ;;;             clarity and quality of code/performance
 (defmethod update-precept ((self agent) precept)
-    (with-slots (fron-sensor front-bump left-bump right-bump back-bump) self
+    (with-slots (front-sensor front-bump left-bump right-bump back-bump) self
         (multiple-value-setq (front-sensor
                 front-bump
                 left-bump
-                        right-bump
-                        back-bump)
-                (values-list percept))))
+                right-bump
+                back-bump)
+            (values-list percept))))+
 
 
-
-  (setf (front-sensor agent) (car precept))
-  (setf (front-bump agent) (cadr precept))
-  (setf (left-bump agent) (caddr precept))
-  (setf (right-bump agent) (cadddr precept))
-  (setf (back-bump agent) (cadddr (cdr precept))))
-
-;;>>> Better as a method "of" agent, i.e., 
-;;>>>     
-;;>>>     (defmethod update-precept ((self agent) precept)
-;;>>>       (with-slots (front-sensor front-bump left-bump right-bump back-bump) self
-;;>>>         (setf front-sensor (car precept)
-;;>>>     	  front-bump (cadr precept)
-;;>>>     	  left-bump (caddr precept)
-;;>>>     	  right-bump (cadddr precept)
-;;>>>     	  back-bump (cadddr (cdr precept)))))
-;;>>>     
-;;>>>     or, even better:
-;;>>>     
-;;>>>     (defmethod update-precept ((self agent) precept)
-;;>>>       (with-slots (front-sensor front-bump left-bump right-bump back-bump) self
-;;>>>         (multiple-value-setq (front-sensor
-;;>>>     			  front-bump
-;;>>>     			  left-bump
-;;>>>     			  right-bump
-;;>>>     			  back-bump)
-;;>>>           (values-list percept))))
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
 
 ;;;
 ;;; Function: can-move
@@ -289,31 +261,23 @@
 ;;;     - agent: the agent running in the search
 ;;; Returns: move function if a move is possible, otherwise nil
 ;;; Description: 
-;;;    This function checks all of an agent's possible moves and calls
-;;;    the move function on the first valid option, or returns nil if none
-;;;    are possible. 
+;;;    This function accesses an agents sensors and checks for possible move
+;;;    options, then adds those that return true to a list. The agent then moves
+;;;    in the direction of the first valid option in the list, if any. 
 ;;; Author: Elizabeth Thompson
 ;;; Created 3/3/2019
-;;; Modications: none
-(defmethod can-move (agent) 
-    (cond ((not (front-sensor agent)) (move agent 'F))
-        ((not (left-bump agent)) (move agent 'L))
-        ((not (right-bump agent)) (move agent 'R))
-        ((not (back-bump agent)) (move agent 'B))
-        (t nil))) ;;;add in a condition that resets the bumper values if movement occurs
+;;; Modications:
+;;;     - 6/14/19 - updated/streamlined code based on feedback from Dr. Turner
+(defmethod can-move ((self agent)) 
+    (with-slots (front-sensor left-bump right-bump back-bump) self
+        (let ((dir (member t (list (cons front-sensor f)
+                    (cons left-bump l)
+    		        (cons right-bump r)
+			        (cons back-bump b)))))
+            (when dir
+                (move self (cdr dir))))))
 
-;;>>> Same comment re: method *of* agent.
-;;>>>     
-;;>>>     ;; Want a cool but opaque way of doing this?
-;;>>>     (defmethod can-move ((self agent)) 
-;;>>>       (with-slots (front-sensor left-bump right-bump back-bump) self
-;;>>>         (let ((dir (member t (list (cons front-sensor f)
-;;>>>     				 (cons left-bump l)
-;;>>>     				 (cons right-bump r)
-;;>>>     				 (cons back-bump b)))))
-;;>>>           (when dir
-;;>>>     	(move self (cdr dir))))))
-;;>>>     		      
+;;;;;;;;;;;;;;;;;;;;;;;;;;TAKE OUT AT END, LEAVE IN NOW FOR REFERENCE;;;;;;;;;
 ;;>>>     ;; Cooler way:
 ;;>>>     (defmethod can-move ((self agent)) 
 ;;>>>       (with-slots (front-sensor left-bump right-bump back-bump) self
@@ -335,6 +299,8 @@
 ;;>>> Okay, I'm done playing with Lisp now...
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
+
 ;;;
 ;;; Function: can-move-dir
 ;;; Arguments: 
@@ -343,8 +309,8 @@
 ;;; Returns: move function if a move is possible, otherwise nil
 ;;; Description: 
 ;;;    This function checks all of an agent's possible moves in the direction
-;;;    pass into it and calls move if any options are valid, otherwise it returns
-;;;    nil when no moves are possible. 
+;;;    pass into it and calls move if any options are valid, otherwise it
+;;;    returns nil when no moves are possible. 
 ;;; Author: Elizabeth Thompson
 ;;; Created 3/5/2019
 ;;; Modications: none
@@ -352,16 +318,20 @@
     (case letter
         (F (if (not (front-sensor agent))
                 (move agent 'F)
-                (progn (turn agent 'R) (reset-sensors agent) (setf (left-bump agent) t))))
+                (progn (turn agent 'R) (reset-sensors agent) 
+                    (setf (left-bump agent) t))))
         (L (if (not (left-bump agent))
                 (move agent 'L)
-                (progn (turn agent 'R) (reset-sensors agent) (setf (left-bump agent) t))))
+                (progn (turn agent 'R) (reset-sensors agent) 
+                    (setf (left-bump agent) t))))
         (R (if (not (right-bump agent))
                 (move agent 'R)
-                (progn (turn agent 'R) (reset-sensors agent) (setf (left-bump agent) t))))
+                (progn (turn agent 'R) (reset-sensors agent) 
+                    (setf (left-bump agent) t))))
         (B (if (not (back-bump agent))
                 (move agent 'B)
-                (progn (turn agent 'R) (reset-sensors agent) (setf (left-bump agent) t))))))
+                (progn (turn agent 'R) (reset-sensors agent) 
+                    (setf (left-bump agent) t))))))
 
 ;;;
 ;;; Function: turn
@@ -395,6 +365,9 @@
 		(reset-sensors agent))))
 	(otherwise nil)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
+
 ;;;
 ;;; Function: move
 ;;; Arguments: 
@@ -402,9 +375,9 @@
 ;;;     - letter: the direction the agent tries to move in
 ;;; Returns: move function if a move is possible, otherwise nil
 ;;; Description: 
-;;;    This function takes in an agent and a direction to move, checks if the move
-;;;    is valid, and either updates the agent's xy coordinates if it is, or updates
-;;;    agent's bump sensor if it encounters an obstacle.
+;;;    This function takes in an agent and a direction to move, checks if the
+;;;    move is valid, and either updates the agent's xy coordinates if it is, 
+;;;    or updates the agent's bump sensor if it encounters an obstacle.
 ;;; Author: Elizabeth Thompson
 ;;; Created 3/3/2019
 ;;; Modications: none
@@ -517,10 +490,14 @@
        (if (not (and (left-bump agent) (front-bump agent)))          
 	   (loop while (not (right-bump agent)) 
               do (move agent 'R)))))                      
-  (cond ((and (left-bump agent) (front-bump agent)) (setf (corner-found agent) t))
-	((and (left-bump agent) (back-bump agent)) (setf (corner-found agent) t))
-	((and (right-bump agent) (front-bump agent)) (setf (corner-found agent) t))
-	((and (right-bump agent) (back-bump agent)) (setf (corner-found agent) t))
+  (cond ((and (left-bump agent) (front-bump agent)) 
+                (setf (corner-found agent) t))
+	((and (left-bump agent) (back-bump agent)) 
+                (setf (corner-found agent) t))
+	((and (right-bump agent) (front-bump agent)) 
+                (setf (corner-found agent) t))
+	((and (right-bump agent) (back-bump agent)) 
+                (setf (corner-found agent) t))
         (t nil)))
 
 ;;;
@@ -538,6 +515,8 @@
     (setf (right-bump agent) nil)
     (setf (back-bump agent) nil))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
 ;;;
 ;;; Function: rules
 ;;; Arguments:
@@ -649,6 +628,7 @@
       (setf (goal-found agent) t)))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
 
 ;;;
 ;;; Function: hill-climbing-rules
@@ -656,9 +636,10 @@
 ;;;     -agent: the agent in the search.
 ;;; Returns: nil
 ;;; Description: 
-;;;     This is the set of rules that the agent-program for the hill-climbing-agent
-;;;     functions like. It calculates the distance from itself to the goal and
-;;;     constantly moves towards the goal in the shortest way it can see.
+;;;     This is the set of rules that the agent-program for the 
+;;;     hill-climbing-agent functions like. It calculates the distance from
+;;;     itself to the goal and constantly moves towards the goal in the
+;;;     shortest way it can see.
 ;;; Author: Elizabeth Thompson
 ;;; Created 3/5/2019
 ;;; Modications: none
@@ -692,7 +673,7 @@
 
 
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
 
 ;;;creates an search agent instance, can be altered for desired agent
 ;;;type
@@ -707,8 +688,8 @@
 ;;; Returns: nil
 ;;; Description:
 ;;;     This search is designed for the two types of reflex agents 
-;;;     Utilizes the global variables to set the simulation rules to the current
-;;;     rule set/agent program such that it matches the type of agent being used.
+;;;     Utilizes the global variables to match the simulation to the current
+;;;     rule set/agent program such that it matches the agent type being used.
 ;;;     The method then calls the rule sets functional code to find a corner.
 ;;; Author: Elizabeth Thompson
 ;;; Created 3/5/2019
@@ -741,6 +722,7 @@
   (setf (rules-list *simulator*) (rules *hill-climbing*))
   (hill-climbing-rules *hill-climbing*))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this is 80 characters to measure
 
 ;;;
 ;;; Function: search-breadth
